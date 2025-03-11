@@ -101,6 +101,9 @@ class Unit
 protected:
     int quantity, weight;
     Position pos;
+    virtual int getType() const = 0;
+    virtual void updateAttackScore();
+    int attackScore = 0;
 private:
     virtual string typeToString() const = 0;
 public:
@@ -109,40 +112,42 @@ public:
     virtual int getAttackScore() = 0;
     Position getCurrentPosition() const;
     virtual string str() const = 0;
-    virtual int getType() const = 0;
+    friend class UnitList;
 };
 
 class Vehicle : public Unit
 {
+protected:
+    int getType() const override { return vehicleType; }
+    void updateAttackScore() override;
 private:
-    enum VehicleType vehicleType;
+    VehicleType vehicleType;
     string typeToString() const override;
 public:
-    Vehicle(int quantity, int weight, const Position pos, enum VehicleType vehicleType);
-    int getAttackScore() override;
+    Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType);
+    int getAttackScore() override { return attackScore; }
     string str() const override { return "Vehicle[vehicleType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
-    int getType() const override { return vehicleType; }
 };
 
 class Infantry : public Unit
 {
+protected:
+    int getType() const override { return infantryType; }
+    void updateAttackScore() override;
 private:
-    enum InfantryType infantryType;
+    InfantryType infantryType;
     string typeToString() const override;
 public:
-    Infantry(int quantity, int weight, const Position pos, enum InfantryType infantryType);
-    int getAttackScore() override;
+    Infantry(int quantity, int weight, const Position pos, InfantryType infantryType);
+    int getAttackScore() override { return attackScore; }
     string str() const override { return "Infantry[infantryType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
-    int getType() const override { return infantryType; }
 };
 
 class UnitList
 {
 protected:
-    int getEXP() const;
-    int getLF() const;
-    void removeUnit(enum VehicleType vehicleType);
-    void removeUnit(enum InfantryType infantryType);
+    void removeUnit( VehicleType vehicleType);
+    void removeUnit( InfantryType infantryType);
 private:
     struct Node
     {
@@ -156,11 +161,11 @@ private:
     Node *sentinal, *last;
     string printList() const;
 public:
-    UnitList(Unit **unitArray, int size);
+    UnitList();
     ~UnitList();
     bool insert(Unit *unit);                   // return true if insert successfully
-    bool isContain(enum VehicleType vehicleType);   // return true if it exists
-    bool isContain(enum InfantryType infantryType); // return true if it exists
+    bool isContain(VehicleType vehicleType);   // return true if it exists
+    bool isContain(InfantryType infantryType); // return true if it exists
     string str() const;
 
     friend class Army;
@@ -173,20 +178,23 @@ protected:
     string name;
     UnitList *unitList;
     BattleField *battleField;
+
+    void setLF(int LF) { this->LF = LF; }
+    void setEXP(int EXP) { this->EXP = EXP; }
 private:
     void updateScore();
     virtual vector<Unit *> getUnit(int target);
 public:
-    vector<Unit *> vehicleList;
-    vector<Unit *> infantryList;
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
-    virtual ~Army();
+    Army::~Army() { delete unitList; }
 
-    int getLF() const;
+    int getLF() const { return LF; };
     int getEXP() const;
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
+
+    friend class UnitList;
 };
 
 class LiberationArmy : public Army {

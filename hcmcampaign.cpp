@@ -64,15 +64,15 @@ BattleField::~BattleField() {
 
 //====================== Unit implementations ======================
 Unit::~Unit() {}
-Unit::Unit(int quantity, int weight, const Position pos) : quantity(quantity), weight(weight), pos(pos) {}
+Unit::Unit(int quantity, int weight, const Position pos) : quantity(quantity), weight(weight), pos(pos) { updateAttackScore(); }
 Position Unit::getCurrentPosition() const { return pos; }
 
 //====================== Vehicle implementations ======================
-Vehicle::Vehicle (int quantity , int weight , const Position pos , enum VehicleType vehicleType)
+Vehicle::Vehicle (int quantity , int weight , const Position pos , VehicleType vehicleType)
     : Unit(quantity, weight, pos), vehicleType(vehicleType) {}
 
-int Vehicle::getAttackScore() {
-    return (quantity * weight + 304 * vehicleType) / 30;
+void Vehicle::updateAttackScore() {
+    attackScore = (quantity * weight + 304 * vehicleType) / 30;
 }
 
 string Vehicle::typeToString() const {
@@ -89,10 +89,10 @@ string Vehicle::typeToString() const {
 }
 
 //====================== Infantry implementations ======================
-Infantry::Infantry (int quantity , int weight , const Position pos , enum InfantryType infantryType)
+Infantry::Infantry (int quantity , int weight , const Position pos , InfantryType infantryType)
     : Unit(quantity, weight, pos), infantryType(infantryType) {}
 
-int Infantry::getAttackScore() {
+void Infantry::updateAttackScore() {
     int score = quantity * weight + 56 * infantryType;
     if (infantryType == SPECIALFORCES && MathUtils::isSquare(weight))
         score += 75;
@@ -110,8 +110,7 @@ int Infantry::getAttackScore() {
         if (infantryType == SPECIALFORCES && MathUtils::isSquare(weight))
             score += 75;
     }
-
-    return score;
+    attackScore = score;
 }
 
 string Infantry::typeToString() const {
@@ -128,42 +127,24 @@ string Infantry::typeToString() const {
 //====================== UnitList implementations ======================
 
 // Protected methods
-int UnitList::getEXP() const {
-    int sum = 0;
-    Node *p = sentinal->next;
-    while (p && dynamic_cast<Infantry*>(p->unit)) {
-        sum += p->unit->getAttackScore();
-        p = p->next;
-    }
-    return sum;
-}
-
-int UnitList::getLF() const {
-    int sum = 0;
-    Node *p = sentinal->next;
-    while (p && dynamic_cast<Infantry*>(p->unit))
-        p = p->next;
-    while (p && dynamic_cast<Vehicle*>(p->unit)) {
-        sum += p->unit->getAttackScore();
-        p = p->next;
-    }
-    return sum;
-}
-
-void UnitList::removeUnit(enum InfantryType infantryType) {
+void UnitList::removeUnit(InfantryType infantryType) {
     Node *p = sentinal;
     while (p->next->unit->getType() != infantryType)
         p = p->next;
-    count_infantry--;
+    Node *temp = p->next;
     p->next = p->next->next;
+    delete temp;
+    count_infantry--;
 }
 
-void UnitList::removeUnit(enum VehicleType vehicleType) {
+void UnitList::removeUnit(VehicleType vehicleType) {
     Node *p = sentinal;
     while (p->next->unit->getType() != vehicleType)
         p = p->next;
+    Node *temp = p->next;
     count_vehicle--;
     p->next = p->next->next;
+    delete temp;
 }
 
 // Private methods
@@ -176,21 +157,10 @@ string UnitList::printList() const {
 }
 
 // Public methods
-UnitList::UnitList(Unit **unitArray, int size) {
+UnitList::UnitList() {
     sentinal = new Node(nullptr, nullptr);
     last = sentinal;
-    int sum = 0;
     count_infantry = count_vehicle = 0;
-
-    for (int i = 0; i < size; i++) {
-        insert(unitArray[i]);
-        sum += unitArray[i]->getAttackScore();
-    }
-
-    if (MathUtils::isSpecial(sum))
-        capacity = 12;
-    else    
-        capacity = 8;
 }
 
 UnitList::~UnitList() {
@@ -216,7 +186,7 @@ bool UnitList::insert(Unit *unit) {
     return true;
 }
 
-bool UnitList::isContain(enum VehicleType vehicleType) {
+bool UnitList::isContain(VehicleType vehicleType) {
     Node *p = sentinal;
     while (p != nullptr) {
         if (p->unit->getType() == vehicleType) return true;
@@ -225,7 +195,7 @@ bool UnitList::isContain(enum VehicleType vehicleType) {
     return false;
 }
 
-bool UnitList::isContain(enum InfantryType infantryType) {
+bool UnitList::isContain(InfantryType infantryType) {
     Node *p = sentinal;
     while (p != nullptr) {
         if (p->unit->getType() == infantryType) return true;
@@ -241,32 +211,22 @@ string UnitList::str() const {
 //====================== Army implementations ======================
 Army::Army(Unit **unitArray, int size, string name, BattleField *battleField)
     : name(name), battleField(battleField) {
-    unitList = new UnitList(unitArray, size);
-    updateScore();
+    LF = EXP = 0;
+    unitList = new UnitList();
+
+    for (int i = 0; i < size; i++) {
+        unitList->insert(unitArray[i]);
+        if (dynamic_cast<Infantry*>(unitArray[i]))
+            EXP += unitArray[i]->getAttackScore();
+        else
+            LF += unitArray[i]->getAttackScore();
+    }
+    if (MathUtils::isSpecial(LF + EXP))
+        unitList->capacity = 12;
+    else    
+        unitList->capacity = 8;
+
 }
-
-Army::~Army() {
-    delete unitList;
-}
-
-vector<Unit *> Army::getUnit(int target) {
-    return {};
-}
-
-void Army::updateScore() {
-    LF = getLF();
-    EXP = getEXP();
-}
-
-int Army::getLF() const {
-    return unitList->getLF();
-}
-
-int Army::getEXP() const {
-    return unitList->getEXP();
-}
-
-
 
 //====================== LiberationArmy implementations ======================
 LiberationArmy::LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField)
