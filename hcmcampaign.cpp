@@ -42,25 +42,10 @@
     }
 
 //====================== Position implementations ======================
-Position::Position(int r, int c) : r(r), c(c) {}
-
 Position::Position(const string &str_pos) {
     r = stoi(str_pos.substr(1, str_pos.find(',') - 1));
     c = stoi(str_pos.substr(str_pos.find(',') + 1, str_pos.size() - 2));
 }
-
-int Position::getRow() const { return r; }
-
-int Position::getCol() const { return c; }
-
-void Position::setRow(int r) { this->r = r; }
-
-void Position::setCol(int c) { this->c = c; }
-
-string Position::str() const {
-    return "(" + to_string(r) + "," + to_string(c) + ")";
-}
-
 //====================== BattleField implementations ======================
 BattleField::BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
                            vector<Position *> arrayRiver, vector<Position *> arrayFortification,

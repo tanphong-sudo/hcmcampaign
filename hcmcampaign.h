@@ -75,13 +75,13 @@ private:
     int r, c;
 
 public:
-    Position(int r = 0, int c = 0);
+    Position(int r = 0, int c = 0) : r(r), c(c) {}
     Position(const string &str_pos); // Example: str_pos = "(1,15)"
-    int getRow() const;
-    int getCol() const;
-    void setRow(int r);
-    void setCol(int c);
-    string str() const; // Example: returns "(1,15)"
+    int getRow() const { return r; }
+    int getCol() const { return c; }
+    void setRow(int r) { this->r = r; }
+    void setCol(int c) { this->c = c; }
+    string str() const { return "(" + to_string(r) + "," + to_string(c) + ")"; }
 };
 
 class BattleField
