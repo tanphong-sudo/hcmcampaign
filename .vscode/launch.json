@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/lebinhdang/Documents/Documents - LE BINH DANG - 1/Documents - LE BINH DANG/TA/HK242/242-KTLT/intial ",
+      "program": "/Users/lebinhdang/Documents/Documents - LE BINH DANG - 1/Documents - LE BINH DANG/TA/HK242/242-KTLT/intial /build/Debug/outDebug"
+    }
+  ]
+}
