@@ -151,8 +151,12 @@ void UnitList::removeUnit(VehicleType vehicleType) {
 string UnitList::printList() const {
     string list = "";
     Node *p = sentinal->next;
-    while (p)
-        list += p->unit->str() + ",";
+    list += p->unit->str();
+    p = p->next;
+    while (p) {
+        list += "," + p->unit->str();
+        p = p->next;
+    }
     return list;
 }
 
@@ -174,20 +178,23 @@ UnitList::~UnitList() {
 
 bool UnitList::insert(Unit *unit) {
     Node *p = sentinal;
-    if (count_infantry + count_vehicle == capacity) return false;
+    if (count_infantry + count_vehicle == capacity && capacity != 0) return false;
     if (dynamic_cast<Vehicle*>(unit)) {
         count_vehicle++;
         last->next = new Node(unit, nullptr);
+        last = last->next;
     }
     else if (dynamic_cast<Infantry*>(unit)) {
-        sentinal->next = new Node(unit, sentinal->next);
+        Node *temp = new Node(unit, sentinal->next);
+        sentinal->next = temp;
+        if (last == sentinal) last = temp;
         count_infantry++;
     }
     return true;
 }
 
 bool UnitList::isContain(VehicleType vehicleType) {
-    Node *p = sentinal;
+    Node *p = sentinal->next;
     while (p != nullptr) {
         if (p->unit->getType() == vehicleType) return true;
         p = p->next;
@@ -196,7 +203,7 @@ bool UnitList::isContain(VehicleType vehicleType) {
 }
 
 bool UnitList::isContain(InfantryType infantryType) {
-    Node *p = sentinal;
+    Node *p = sentinal->next;
     while (p != nullptr) {
         if (p->unit->getType() == infantryType) return true;
         p = p->next;
@@ -242,10 +249,9 @@ bool LiberationArmy::win(int enemy, vector<Unit *> &unitList) {
 
 void LiberationArmy::fight(Army *enemy, bool defense) {
     if (!defense) {
-        LF += round((double) LF * 0.5);
-        EXP += round((double) EXP * 0.5);
+        LF = round((double) LF * 1.5);
+        EXP = round((double) EXP * 1.5);
         int enemyLF = enemy->getLF();
-        int enemyEXP = enemy->getEXP();
     }
     else {
 
@@ -257,7 +263,7 @@ vector<Unit *> LiberationArmy::getUnit(int target) {
 }
 
 string LiberationArmy::str() const {
-    return "LiberationArmy[" + name + ",LF=" + to_string(LF) + ",EXP=" + to_string(EXP) + "]";
+    return "LiberationArmy[name=" + name + ",LF=" + to_string(LF) + ",EXP=" + to_string(EXP) + ",unitList=" + unitList->str() + "]";
 }
 
 //====================== ARVN implementations ======================

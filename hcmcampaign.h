@@ -156,7 +156,6 @@ private:
         Node(Unit *unit, Node *next) : unit(unit), next(next) {}
     };
     int capacity;
-    int size;
     int count_vehicle, count_infantry;
     Node *sentinal, *last;
     string printList() const;
@@ -178,18 +177,14 @@ protected:
     string name;
     UnitList *unitList;
     BattleField *battleField;
-
-    void setLF(int LF) { this->LF = LF; }
-    void setEXP(int EXP) { this->EXP = EXP; }
 private:
     void updateScore();
     virtual vector<Unit *> getUnit(int target);
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
     Army::~Army() { delete unitList; }
-
-    int getLF() const { return LF; };
-    int getEXP() const;
+    int getLF() const { return LF; }
+    int getEXP() const { return EXP; }
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
@@ -203,6 +198,7 @@ private:
     vector<Unit *> getUnit(int target) override;
 public:
     LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField);
+    // remember to update LF and EXP when insert new unit
     void fight(Army *enemy, bool defense = false) override;
     string str() const override;
 };
