@@ -120,7 +120,7 @@ private:
 public:
     Vehicle(int quantity, int weight, const Position pos, enum VehicleType vehicleType);
     int getAttackScore() override;
-    string str() const override { return "Vehicle[" + typeToString() + "=<" + to_string(quantity) + "," + to_string(weight) + pos.str() + ">]"; }
+    string str() const override { return "Vehicle[vehicleType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
     int getType() const override { return vehicleType; }
 };
 
@@ -132,7 +132,7 @@ private:
 public:
     Infantry(int quantity, int weight, const Position pos, enum InfantryType infantryType);
     int getAttackScore() override;
-    string str() const override { return "Infantry[" + typeToString() + "=<" + to_string(quantity) + "," + to_string(weight) + pos.str() + ">]"; }
+    string str() const override { return "Infantry[infantryType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
     int getType() const override { return infantryType; }
 };
 
