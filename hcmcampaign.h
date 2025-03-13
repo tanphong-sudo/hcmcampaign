@@ -102,7 +102,6 @@ class Unit
 protected:
     int quantity, weight;
     Position pos;
-    virtual int getType() const = 0;
     virtual void setAttackScore();
     int attackScore = 0;
     void updateAttackScore(int score) { attackScore = score; }
@@ -114,6 +113,7 @@ public:
     virtual int getAttackScore() = 0;
     Position getCurrentPosition() const;
     virtual string str() const = 0;
+    virtual int getType() const = 0;
     friend class UnitList;
 };
 
@@ -147,7 +147,7 @@ public:
 
 class UnitList
 {
-    private:
+private:
     void removeUnit(int type, bool isInfantry);
     struct Node
     {
@@ -166,13 +166,18 @@ class UnitList
     int nextFibonacci(int n);
     void removeUnits(vector<Unit *> &unitList);
     void removeUnits(bool isInfatry); // remove all, 1 for infantry, 0 for vehicle
-    void captureUnits(UnitList *enemy);
+    void captureUnits(Army *enemy);
 public:
     UnitList();
     ~UnitList();
     bool insert(Unit *unit);                   // return true if insert successfully
+    bool isContain(Unit *unit);
     bool isContain(VehicleType vehicleType);   // return true if it exists
     bool isContain(InfantryType infantryType); // return true if it exists
+
+    void updateUnit(Unit *unit);
+    void updateUnit(VehicleType vehicleType, int weight);
+    void updateUnit(InfantryType infantryType, int weight);
     string str() const;
     void setAttack(Node *p, double factor) { p->unit->updateAttackScore(round(p->unit->getAttackScore() * factor)); }
     int size() const { return count_vehicle + count_infantry; }
@@ -200,7 +205,7 @@ public:
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
-
+    friend class UnitList;
 };
 
 class LiberationArmy : public Army {

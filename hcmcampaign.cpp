@@ -178,11 +178,6 @@ UnitList::~UnitList() {
 
 bool UnitList::insert(Unit *unit) {
     Node *p = sentinal;
-    bool alreadyHave = isContain(dynamic_cast<Vehicle*>(unit) ? dynamic_cast<Vehicle*>(unit->getType()) : dynamic_cast<Infantry*>(unit)->getType());
-    while (p->next != nullptr) {
-        if (p->next->unit == unit) return false;
-        p = p->next;
-    }
 
     if (dynamic_cast<Vehicle*>(unit)) {
         count_vehicle++;
@@ -196,6 +191,16 @@ bool UnitList::insert(Unit *unit) {
         count_infantry++;
     }
     return true;
+}
+
+bool UnitList::isContain(Unit* unit) {
+    if (dynamic_cast<Vehicle*>(unit)) {
+        return isContain(static_cast<VehicleType>(unit->getType()));
+    }
+    else if (dynamic_cast<Infantry*>(unit)) {
+        return isContain(static_cast<InfantryType>(unit->getType()));
+    }
+    return false;
 }
 
 bool UnitList::isContain(VehicleType vehicleType) {
@@ -260,12 +265,45 @@ void UnitList::removeUnits(bool isInfantry) {
     }
 }
 
-void UnitList::captureUnits(UnitList *enemy) {
-    Node *p = enemy->sentinal->next;
+void UnitList::updateUnit(Unit *unit) {
+    if (dynamic_cast<Vehicle*>(unit)) {
+        updateUnit(static_cast<VehicleType>(unit->getType()), unit->weight);
+    }
+    else if (dynamic_cast<Infantry*>(unit)) {
+        updateUnit(static_cast<InfantryType>(unit->getType()), unit->weight);
+    }
+}
+
+void UnitList::updateUnit(VehicleType vehicleType, int weight) {
+    Node *p = sentinal->next;
+    while (p != nullptr) {
+        if (dynamic_cast<Vehicle*>(p->unit) && p->unit->getType() == vehicleType) {
+            p->unit->quantity += weight;
+            return;
+        }
+        p = p->next;
+    }
+}
+
+void UnitList::updateUnit(InfantryType infantryType, int weight) {
+    Node *p = sentinal->next;
+    while (p != nullptr) {
+        if (dynamic_cast<Infantry*>(p->unit) && p->unit->getType() == infantryType) {
+            p->unit->quantity += weight;
+            return;
+        }
+        p = p->next;
+    }
+}
+
+void UnitList::captureUnits(Army *enemy) {
+    Node *p = enemy->unitList->sentinal->next;
     while (p != nullptr) {
         if (this->size() == capacity) return;
 
-
+        if (isContain(p->unit)) updateUnit(p->unit);
+        else insert(p->unit);
+        p = p->next;
     }
 }
 
@@ -329,19 +367,19 @@ void LiberationArmy::fight(Army *enemy, bool defense) {
             hadBattle = true;
             unitList->removeUnits(infantryCombination);
             unitList->removeUnits(vehicleCombination);
-            unitList->captureEnemyUnits(enemy);
+            unitList->captureUnits(enemy);
         } 
         else if (hasInfantryCombo && LF > enemyLF) {
             hadBattle = true;
             unitList->removeUnits(infantryCombination);
             unitList->removeUnits(false); // remove all Vehicle
-            unitList->captureEnemyUnits(enemy);
+            unitList->captureUnits(enemy);
         } 
         else if (hasVehicleCombo && EXP > enemyEXP) {
             hadBattle = true;
             unitList->removeUnits(vehicleCombination);
             unitList->removeUnits(true); // remove all Infantry
-            unitList->captureEnemyUnits(enemy);
+            unitList->captureUnits(enemy);
         } 
         else
             unitList->reduceWeights(0.9);
@@ -402,7 +440,7 @@ void LiberationArmy::removeAllInfantry() {
     // Implementation details
 }
 
-void LiberationArmy::captureEnemyUnits(Army* enemy) {
+void LiberationArmy::captureUnits(Army* enemy) {
     // Capture and add enemy units
     // Implementation details
 }
