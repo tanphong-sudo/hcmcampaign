@@ -41,6 +41,16 @@
         return false;
     }
 
+int nextFibo(int n) {
+    int a = 0, b = 1;
+    while (b < n) {
+        int temp = b;
+        b = a + b;
+        a = temp;
+    }
+    return b;
+}
+
 //====================== Position implementations ======================
 Position::Position(const string &str_pos) {
     r = stoi(str_pos.substr(1, str_pos.find(',') - 1));
@@ -221,7 +231,7 @@ bool UnitList::isContain(InfantryType infantryType) {
     return false;
 }
 
-void UnitList::reduceWeights(double factor) {
+void UnitList::updateWeights(double factor) {
     Node *p = sentinal->next;
     while (p != nullptr) {
         p->unit->weight = round(p->unit->weight * factor);
@@ -229,7 +239,7 @@ void UnitList::reduceWeights(double factor) {
     }
 }
 
-void UnitList::reduceQuantities(double factor) {
+void UnitList::updateQuantities(double factor) {
     Node *p = sentinal->next;
     while (p != nullptr) {
         p->unit->quantity = round(p->unit->quantity * factor);
@@ -303,7 +313,31 @@ void UnitList::captureUnits(Army *enemy) {
 
         if (isContain(p->unit)) updateUnit(p->unit);
         else insert(p->unit);
+        Node *temp = p;
         p = p->next;
+        delete temp;
+    }
+}
+
+void UnitList::upToFibo() {
+    for (Node *p = sentinal->next; p; p = p->next) {
+        p->unit->quantity = MathUtils::nextFibo(p->unit->quantity);
+    }
+}
+
+void UnitList::resetScore() {
+    for (Node *p = sentinal->next; p; p = p->next) {
+        p->unit->setAttackScore();
+    }
+}
+
+void UnitList::removeUselessUnits() {
+    for (Node *p = sentinal->next; p; p = p->next) {
+        if (p->unit->getAttackScore() <= 1) {
+            Node *temp = p;
+            p = p->next;
+            delete temp;
+        }
     }
 }
 
@@ -341,6 +375,11 @@ void Army::updateScore() {
             LF += p->unit->getAttackScore();
         p = p->next;
     }
+}
+
+void Army::resetScore() {
+    unitList->resetScore();
+    updateScore();
 }
 
 //====================== LiberationArmy implementations ======================
@@ -381,96 +420,39 @@ void LiberationArmy::fight(Army *enemy, bool defense) {
             unitList->removeUnits(true); // remove all Infantry
             unitList->captureUnits(enemy);
         } 
-        else
-            unitList->reduceWeights(0.9);
+        else {
+            unitList->updateWeights(0.9);
+            updateScore();
+        }
         
         updateScore();
     }
     else {
-        // Defense mode
         LF = round((double) LF * 1.3);
         EXP = round((double) EXP * 1.3);
         int enemyLF = enemy->getLF();
         int enemyEXP = enemy->getEXP();
-        
-        if (LF >= enemyLF && EXP >= enemyEXP) {
-            // Victory
-            // Implementation for victory in defense
-        } 
-        else if (LF < enemyLF && EXP < enemyEXP) {
-            // Need reinforcement
-            reinforceUnits();
-            // Check again after reinforcement
+        bool endFight = false;
+
+        while (!endFight) {
+            for (UnitList::Node *p = unitList->sentinal->next; p != nullptr; p = p->next) 
+                unitList->setAttack(p, 1.3);
+
             if (LF >= enemyLF && EXP >= enemyEXP) {
-                // Victory after reinforcement
+                endFight = true;
+                break;
+            }
+            else if (LF >= enemyLF || EXP >= enemyEXP) {
+                unitList->updateQuantities(0.9);
+                updateScore();
+                endFight = true;
             } else {
-                // Still not enough, reduce quantities
-                reduceUnitQuantities();
+                unitList->upToFibo();
+                updateScore();
             }
         }
-        else {
-            // One stat is less - reduce quantities
-            reduceUnitQuantities();
-        }
-        
-        // Update scores
-        updateScore();
     }
-}
-
-vector<Unit *> LiberationArmy::getUnit(int target) {
-    // Implementation for finding units based on target criteria
-    vector<Unit*> result;
-    // Fill based on implementation details
-    return result;
-}
-
-void LiberationArmy::removeUnits(const vector<Unit*>& units) {
-    // Remove specified units from the army
-    // Implementation details
-}
-
-void LiberationArmy::removeAllVehicles() {
-    // Remove all vehicle units
-    // Implementation details
-}
-
-void LiberationArmy::removeAllInfantry() {
-    // Remove all infantry units
-    // Implementation details
-}
-
-void LiberationArmy::captureUnits(Army* enemy) {
-    // Capture and add enemy units
-    // Implementation details
-}
-
-void LiberationArmy::reduceUnitWeights() {
-    // Reduce weight of all units by 10%
-    // Implementation details
-}
-
-void LiberationArmy::reduceUnitQuantities() {
-    // Reduce quantity of all units by 10%
-    // Implementation details
-}
-
-void LiberationArmy::reinforceUnits() {
-    // Increase each unit's quantity to next Fibonacci number
-    // Implementation details
-}
-
-int LiberationArmy::nextFibonacci(int n) {
-    // Find the next Fibonacci number after n
-    if (n < 1) return 1;
-    
-    int a = 1, b = 1;
-    while (b <= n) {
-        int temp = a + b;
-        a = b;
-        b = temp;
-    }
-    return b;
+    resetScore();
 }
 
 string LiberationArmy::str() const {
@@ -483,19 +465,29 @@ ARVN::ARVN(Unit **unitArray, int size, string name, BattleField *battleField)
 
 void ARVN::fight(Army *enemy, bool defense) {
     if (!defense) {
-
+        unitList->updateQuantities(0.8);
+        unitList->removeUselessUnits();
+        updateScore();
     }
     else {
+        LiberationArmy* liberationArmy = dynamic_cast<LiberationArmy*>(enemy);
+        if (liberationArmy) {
+            UnitList* originalList = unitList;
+            int originalSize = originalList->size();
 
+            liberationArmy->fight(this, false);
+
+            if (unitList->size() < originalSize) {
+                unitList->updateWeights(0.8);
+                updateScore();
+            }
+        }
     }
 }
 
-vector<Unit *> ARVN::getUnit(int target) {
-    return {};
-}
 
 string ARVN::str() const {
-    return "ARVN[" + name + ",LF=" + to_string(LF) + ",EXP=" + to_string(EXP) + "]";
+    return "ARVN[name=" + name + ",LF=" + to_string(LF) + ",EXP=" + to_string(EXP) + ",unitList=" + unitList->str() + "]";
 }
 /*
 //====================== TerrainElement implementations ======================

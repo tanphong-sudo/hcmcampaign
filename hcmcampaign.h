@@ -68,6 +68,7 @@ public:
     static bool isSquare(int n);
     static int digitSum(int n);
     static bool isSpecial(int n);
+    static int nextFibo(int n);
 };
 
 class Position
@@ -160,13 +161,16 @@ private:
     int count_vehicle, count_infantry;
     string printList() const;
     vector<Unit *> findCombination(bool isInfantry, int targetScore);
-    void reduceWeights(double factor);
-    void reduceQuantities(double factor);
+    void updateWeights(double factor);
+    void updateQuantities(double factor);
     void reinforce();
     int nextFibonacci(int n);
     void removeUnits(vector<Unit *> &unitList);
     void removeUnits(bool isInfatry); // remove all, 1 for infantry, 0 for vehicle
     void captureUnits(Army *enemy);
+    void upToFibo();
+    void resetScore();
+    void removeUselessUnits();
 public:
     UnitList();
     ~UnitList();
@@ -195,6 +199,7 @@ protected:
     UnitList *unitList;
     BattleField *battleField;
     void updateScore();
+    void resetScore();
 private:
     virtual vector<Unit *> getUnit(int target);
 public:
