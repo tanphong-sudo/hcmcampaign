@@ -63,7 +63,8 @@ enum InfantryType
     REGULARINFANTRY
 };
 
-namespace MathUtils {
+class MathUtils {
+public:
     static bool isSquare(int n);
     static int digitSum(int n);
     static bool isSpecial(int n);
@@ -102,8 +103,9 @@ protected:
     int quantity, weight;
     Position pos;
     virtual int getType() const = 0;
-    virtual void updateAttackScore();
+    virtual void setAttackScore();
     int attackScore = 0;
+    void updateAttackScore(int score) { attackScore = score; }
 private:
     virtual string typeToString() const = 0;
 public:
@@ -119,7 +121,7 @@ class Vehicle : public Unit
 {
 protected:
     int getType() const override { return vehicleType; }
-    void updateAttackScore() override;
+    void setAttackScore() override;
 private:
     VehicleType vehicleType;
     string typeToString() const override;
@@ -133,7 +135,7 @@ class Infantry : public Unit
 {
 protected:
     int getType() const override { return infantryType; }
-    void updateAttackScore() override;
+    void setAttackScore() override;
 private:
     InfantryType infantryType;
     string typeToString() const override;
@@ -145,20 +147,26 @@ public:
 
 class UnitList
 {
-protected:
-    void removeUnit( VehicleType vehicleType);
-    void removeUnit( InfantryType infantryType);
-private:
+    private:
+    void removeUnit(int type, bool isInfantry);
     struct Node
     {
         Unit *unit;
         Node *next;
         Node(Unit *unit, Node *next) : unit(unit), next(next) {}
     };
+    Node *sentinal, *last;
     int capacity;
     int count_vehicle, count_infantry;
-    Node *sentinal, *last;
     string printList() const;
+    vector<Unit *> findCombination(bool isInfantry, int targetScore);
+    void reduceWeights(double factor);
+    void reduceQuantities(double factor);
+    void reinforce();
+    int nextFibonacci(int n);
+    void removeUnits(vector<Unit *> &unitList);
+    void removeUnits(bool isInfatry); // remove all, 1 for infantry, 0 for vehicle
+    void captureUnits(UnitList *enemy);
 public:
     UnitList();
     ~UnitList();
@@ -166,8 +174,12 @@ public:
     bool isContain(VehicleType vehicleType);   // return true if it exists
     bool isContain(InfantryType infantryType); // return true if it exists
     string str() const;
+    void setAttack(Node *p, double factor) { p->unit->updateAttackScore(round(p->unit->getAttackScore() * factor)); }
+    int size() const { return count_vehicle + count_infantry; }
 
     friend class Army;
+    friend class LiberationArmy;
+    friend class ARVN;
 };
 
 class Army {
@@ -177,30 +189,28 @@ protected:
     string name;
     UnitList *unitList;
     BattleField *battleField;
-private:
     void updateScore();
+private:
     virtual vector<Unit *> getUnit(int target);
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
-    Army::~Army() { delete unitList; }
+    ~Army() { delete unitList; }
     int getLF() const { return LF; }
     int getEXP() const { return EXP; }
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
     virtual string str() const = 0;
 
-    friend class UnitList;
 };
 
 class LiberationArmy : public Army {
-private:
-    bool win(int enemy, vector<Unit *> &unitList);
-    vector<Unit *> getUnit(int target) override;
 public:
-    LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField);
+    LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField)
+    : Army(unitArray, size, name, battleField) {}
     // remember to update LF and EXP when insert new unit
     void fight(Army *enemy, bool defense = false) override;
     string str() const override;
+    friend class UnitList;
 };
 
 class ARVN : public Army {
@@ -210,6 +220,7 @@ public:
     ARVN(Unit **unitArray, int size, string name, BattleField *battleField);
     void fight(Army *enemy, bool defense = false) override;
     string str() const override;
+    friend class UnitList;
 };
 /*
 class TerrainElement
