@@ -5,43 +5,43 @@
 ////////////////////////////////////////////////////////////////////////
 
 //====================== MathUtils implementations ======================
-    bool MathUtils::isSquare(int n) {
-        int root = sqrt(n);
-        return root * root == n;
-    }
+bool MathUtils::isSquare(int n) {
+    int root = sqrt(n);
+    return root * root == n;
+}
 
-    int MathUtils::digitSum(int n) {
-        int sum = 0;
-        while (n > 0) {
-            sum += n % 10;
-            n /= 10;
+int MathUtils::digitSum(int n) {
+    int sum = 0;
+    while (n > 0) {
+        sum += n % 10;
+        n /= 10;
+    }
+    return sum;
+}
+
+bool MathUtils::isSpecial(int n) {
+    // Check if n can be represented as sum of powers of 3, 5, 7
+    int temp = n;
+    int bases[] = {3, 5, 7};
+    for (int base : bases) {
+        temp = n;
+        vector<int> powers;
+
+        for (int p = 1; p <= temp; p *= base) {
+            powers.push_back(p);
         }
-        return sum;
-    }
 
-    bool MathUtils::isSpecial(int n) {
-        // Check if n can be represented as sum of powers of 3, 5, 7
-        int temp = n;
-        int bases[] = {3, 5, 7};
-        for (int base : bases) {
-            temp = n;
-            vector<int> powers;
-
-            for (int p = 1; p <= temp; p *= base) {
-                powers.push_back(p);
-            }
-
-            for (int i = powers.size() - 1; i >= 0 && temp > 0; i--) {
-                if (powers[i] <= temp) 
-                    temp -= powers[i];
-            }
-
-            if (temp == 0) return true;
+        for (int i = powers.size() - 1; i >= 0 && temp > 0; i--) {
+            if (powers[i] <= temp) 
+                temp -= powers[i];
         }
-        return false;
-    }
 
-int nextFibo(int n) {
+        if (temp == 0) return true;
+    }
+    return false;
+}
+
+int MathUtils::nextFibo(int n) {
     int a = 0, b = 1;
     while (b < n) {
         int temp = b;
@@ -56,26 +56,14 @@ Position::Position(const string &str_pos) {
     r = stoi(str_pos.substr(1, str_pos.find(',') - 1));
     c = stoi(str_pos.substr(str_pos.find(',') + 1, str_pos.size() - 2));
 }
-//====================== BattleField implementations ======================
-BattleField::BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
-                           vector<Position *> arrayRiver, vector<Position *> arrayFortification,
-                           vector<Position *> arrayUrban, vector<Position *> arraySpecialZone)
-    : n_rows(n_rows), n_cols(n_cols) {
-    terrain.push_back(arrayForest);
-    terrain.push_back(arrayRiver);
-    terrain.push_back(arrayFortification);
-    terrain.push_back(arrayUrban);
-    terrain.push_back(arraySpecialZone);
-}
-
-BattleField::~BattleField() {
-    terrain.clear();
-}
 
 //====================== Unit implementations ======================
 Unit::~Unit() {}
 Unit::Unit(int quantity, int weight, const Position pos) : quantity(quantity), weight(weight), pos(pos) { setAttackScore(); }
 Position Unit::getCurrentPosition() const { return pos; }
+void Unit::setAttackScore() {
+    
+}
 
 //====================== Vehicle implementations ======================
 Vehicle::Vehicle (int quantity , int weight , const Position pos , VehicleType vehicleType)
@@ -136,6 +124,25 @@ string Infantry::typeToString() const {
 }
 //====================== UnitList implementations ======================
 
+vector<Unit *> Army::getUnit(int target) {
+    // Default implementation
+    vector<Unit *> result;
+    return result;
+}
+vector<Unit *> UnitList::findCombination(bool isInfantry, int targetScore) {
+    vector<Unit *> result;
+    // Simple implementation - find units that match the criteria
+    Node *p = sentinal->next;
+    while (p != nullptr) {
+        bool isUnitInfantry = dynamic_cast<Infantry*>(p->unit) != nullptr;
+        if (isUnitInfantry == isInfantry && p->unit->getAttackScore() <= targetScore) {
+            result.push_back(p->unit);
+            targetScore -= p->unit->getAttackScore();
+        }
+        p = p->next;
+    }
+    return result;
+}
 // Private methods
 void UnitList::removeUnit(int type, bool isInfantry) {
     Node *p = sentinal;
@@ -382,6 +389,16 @@ void Army::resetScore() {
     updateScore();
 }
 
+void Army::terrainEffect(double factor, int radius, bool isEXP) {
+    int row = battleField->n_rows;
+    int col = battleField->n_cols;
+    int r = 0, c = 0;
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+        }
+    }
+}
+
 //====================== LiberationArmy implementations ======================
 void LiberationArmy::fight(Army *enemy, bool defense) {
     if (!defense) {
@@ -485,47 +502,528 @@ void ARVN::fight(Army *enemy, bool defense) {
     }
 }
 
+// Add with the ARVN implementations
+vector<Unit *> ARVN::getUnit(int target) {
+    vector<Unit *> result;
+    // ARVN-specific implementation
+    UnitList::Node *p = unitList->sentinal->next;
+    int count = 0;
+    while (p != nullptr && count < target) {
+        result.push_back(p->unit);
+        p = p->next;
+        count++;
+    }
+    return result;
+}
+
 
 string ARVN::str() const {
     return "ARVN[name=" + name + ",LF=" + to_string(LF) + ",EXP=" + to_string(EXP) + ",unitList=" + unitList->str() + "]";
 }
-/*
-//====================== TerrainElement implementations ======================
-TerrainElement::TerrainElement() {}
 
+//====================== BattleField implementations ======================
+BattleField::BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
+    vector<Position *> arrayRiver, vector<Position *> arrayFortification,
+    vector<Position *> arrayUrban, vector<Position *> arraySpecialZone)
+    : n_rows(n_rows), n_cols(n_cols) {
+
+    terrain.resize(n_rows);
+    for (int i = 0; i < n_rows; i++) {
+        terrain[i].resize(n_cols);
+        for (int j = 0; j < n_cols; j++) {
+            terrain[i][j] = new Road();
+        }
+    }
+
+    for (int i = 0; i < arrayForest.size(); i++) {
+        Position *pos = arrayForest[i];
+        int r = pos->getRow();
+        int c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c < n_cols) {
+            delete terrain[r][c];  // Delete default Road
+            terrain[r][c] = new Mountain();
+        }
+    }
+    
+    for (int i = 0; i < arrayRiver.size(); i++) {
+        Position *pos = arrayRiver[i];
+        int r = pos->getRow();
+        int c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c < n_cols) {
+            delete terrain[r][c];
+            terrain[r][c] = new River();
+        }
+    }
+    
+    for (int i = 0; i < arrayFortification.size(); i++) {
+        Position *pos = arrayFortification[i];
+        int r = pos->getRow();
+        int c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c < n_cols) {
+            delete terrain[r][c];
+            terrain[r][c] = new Fortification();
+        }
+    }
+    
+    for (int i = 0; i < arrayUrban.size(); i++) {
+        Position *pos = arrayUrban[i];
+        int r = pos->getRow();
+        int c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c < n_cols) {
+            delete terrain[r][c];
+            terrain[r][c] = new Urban();
+        }
+    }
+    
+    for (int i = 0; i < arraySpecialZone.size(); i++) {
+        Position *pos = arraySpecialZone[i];
+        int r = pos->getRow();
+        int c = pos->getCol();
+        if (r >= 0 && r < n_rows && c >= 0 && c < n_cols) {
+            delete terrain[r][c];
+            terrain[r][c] = new SpecialZone();
+        }
+    }
+}
+
+BattleField::~BattleField() {
+    for (int i = 0; i < n_rows; i++) {
+        for (int j = 0; j < n_cols; j++) {
+            delete terrain[i][j];
+        }
+    }
+    terrain.clear();
+}
+
+TerrainElement* BattleField::getTerrainAt(int row, int col) const {
+    if (row >= 0 && row < n_rows && col >= 0 && col < n_cols) {
+        return terrain[row][col];
+    }
+    return nullptr;
+}
+
+// Add these before the implementations of specific terrain elements
+
+TerrainElement::TerrainElement() {}
 TerrainElement::~TerrainElement() {}
 
-//====================== Road implementations ======================
 Road::Road() {}
-
 Road::~Road() {}
 
-void Road::getEffect(Army *army) { return; }
-
-//====================== Mountain implementations ======================
 Mountain::Mountain() {}
-
 Mountain::~Mountain() {}
 
-void Mountain::getEffect(Army *army) {
+River::River() {}
+River::~River() {}
 
-} 
+Urban::Urban() {}
+Urban::~Urban() {}
+
+Fortification::Fortification() {}
+Fortification::~Fortification() {}
+
+SpecialZone::SpecialZone() {}
+SpecialZone::~SpecialZone() {}
+
+//====================== River implementations ======================
+
+void River::getEffect(Army *army) {
+    // For units at River positions
+    for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+        Position pos = node->unit->getCurrentPosition();
+        int r = pos.getRow();
+        int c = pos.getCol();
+        
+        // Calculate distance from unit to this River
+        double distance = 0;  // In a real implementation, this would use coordinates
+        
+        // Direct effect at River position
+        if (distance == 0) {
+            // Units directly on river positions have EXP decreased by 10%
+            army->modifyEXP(0.9);
+        } 
+        // Effect for units within 2 km radius
+        else if (distance <= 2) {
+            // Units within 2km have minor decrease in EXP
+            army->modifyEXP(0.95);
+        }
+    }
+}
+
+//====================== Urban implementations ======================
+
+void Urban::getEffect(Army *army) {
+    // For units at Urban positions
+    for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+        Position pos = node->unit->getCurrentPosition();
+        int r = pos.getRow();
+        int c = pos.getCol();
+        
+        // Calculate distance from unit to Urban area
+        double distance = 0;  // Will be calculated based on battlefield layout
+        
+        // Direct effect at Urban position
+        if (distance == 0) {
+            // Units in urban areas get 20% increase in LF
+            army->modifyLF(1.2);
+        } 
+        // Effect for units within 1.5 km radius
+        else if (distance <= 1.5) {
+            // Units near urban areas get 10% increase in LF
+            army->modifyLF(1.1);
+        }
+    }
+}
+
+//====================== Fortification implementations ======================
+
+void Fortification::getEffect(Army *army) {
+    // Only ARVN forces benefit from fortifications
+    if (dynamic_cast<ARVN*>(army)) {
+        for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+            Position pos = node->unit->getCurrentPosition();
+            int r = pos.getRow();
+            int c = pos.getCol();
+            
+            // Calculate distance from unit to fortification
+            double distance = 0;  // Will be calculated based on battlefield layout
+            
+            // Direct effect at fortification position
+            if (distance == 0) {
+                // ARVN units at fortifications get 30% boost in LF
+                army->LF = round(army->LF * 1.3);
+            } 
+            // Effect for units within 3 km radius
+            else if (distance <= 3) {
+                // ARVN units near fortifications get 15% boost in LF
+                army->LF = round(army->LF * 1.15);
+            }
+        }
+    }
+}
+
+//====================== SpecialZone implementations ======================
+
+void SpecialZone::getEffect(Army *army) {
+    // Only Liberation Army forces benefit from special zones
+    if (dynamic_cast<LiberationArmy*>(army)) {
+        for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+            Position pos = node->unit->getCurrentPosition();
+            int r = pos.getRow();
+            int c = pos.getCol();
+            
+            // Calculate distance from unit to special zone
+            double distance = 0;  // Will be calculated based on battlefield layout
+            
+            // Direct effect at special zone position
+            if (distance == 0) {
+                // Units at special zones get 30% boost in EXP
+                army->EXP = round(army->EXP * 1.3);
+            } 
+            // Effect for units within 2.5 km radius
+            else if (distance <= 2.5) {
+                // Units near special zones get 15% boost in EXP
+                army->EXP = round(army->EXP * 1.15);
+            }
+        }
+    }
+}
+
+//====================== Road implementations ======================
+void Road::getEffect(Army *army) {
+    // For units on or near road areas
+    for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+        Position pos = node->unit->getCurrentPosition();
+        int r = pos.getRow();
+        int c = pos.getCol();
+        
+        // Calculate distance from unit to road
+        double distance = 0; // Will be calculated based on battlefield layout
+        
+        // Direct effect on Road
+        if (distance == 0) {
+            // Units on roads get mobility advantages (no penalty)
+            // No direct stat changes
+        }
+        // Effect for units within 1 km of roads
+        else if (distance <= 1) {
+            // Slight movement advantage, but no numerical effect
+        }
+    }
+}
+
+//====================== Mountain implementations ======================
+void Mountain::getEffect(Army *army) {
+    // For units positioned in mountainous terrain
+    for (UnitList::Node* node = army->unitList->sentinal->next; node != nullptr; node = node->next) {
+        Position pos = node->unit->getCurrentPosition();
+        int r = pos.getRow();
+        int c = pos.getCol();
+        
+        // Calculate distance from unit to this Mountain
+        double distance = 0;  // Will be calculated based on battlefield layout
+        
+        // Direct effect at Mountain position
+        if (distance == 0) {
+            // Units directly in mountains have LF decreased by 20%
+            if (dynamic_cast<Vehicle*>(node->unit)) {
+                node->unit->attackScore = round(node->unit->attackScore * 0.8);
+            }
+            army->LF = round(army->LF * 0.8);
+        } 
+        // Effect for units within 1.8 km radius
+        else if (distance <= 1.8) {
+            // Units near mountains have LF decreased by 10%
+            if (dynamic_cast<Vehicle*>(node->unit)) {
+                node->unit->attackScore = round(node->unit->attackScore * 0.9);
+            }
+            army->LF = round(army->LF * 0.9);
+        }
+    }
+}
+
+//====================== Configuration implementations ======================
+Configuration::Configuration(const string &file_path) {
+    ifstream file(file_path);
+    if (!file.is_open()) {
+        throw runtime_error("Cannot open file: " + file_path);
+    }
+    
+    string line;
+    
+    getline(file, line);
+    n_rows = stoi(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    n_cols = stoi(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    arrayForest = parsePositionArray(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    arrayRiver = parsePositionArray(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    arrayFortification = parsePositionArray(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    arrayUrban = parsePositionArray(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    arraySpecialZone = parsePositionArray(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    parseUnitList(line.substr(line.find('=') + 1));
+    
+    getline(file, line);
+    eventCode = stoi(line.substr(line.find('=') + 1));
+    
+    file.close();
+}
+
+Configuration::~Configuration() {
+    for (Position* pos : arrayForest) delete pos;
+    for (Position* pos : arrayRiver) delete pos;
+    for (Position* pos : arrayFortification) delete pos;
+    for (Position* pos : arrayUrban) delete pos;
+    for (Position* pos : arraySpecialZone) delete pos;
+    
+    for (Unit* unit : arrayLiberationArmy) delete unit;
+    for (Unit* unit : arrayARVN) delete unit;
+}
+
+vector<Position*> Configuration::parsePositionArray(const string &value) {
+    vector<Position*> positions;
+    int start = value.find('[');
+    int end = value.rfind(']');
+    
+    if (start == string::npos || end == string::npos) {
+        return positions;
+    }
+    
+    string posArray = value.substr(start + 1, end - start - 1);
+    int index = 0;
+    
+    while ((index = posArray.find('(', index)) != string::npos) {
+        int closeParen = posArray.find(')', index);
+        if (closeParen == string::npos) break;
+        
+        string posStr = posArray.substr(index, closeParen - index + 1);
+        positions.push_back(new Position(posStr));
+        
+        index = closeParen + 1;
+    }
+    
+    return positions;
+}
+
+void Configuration::parseUnitList(const string &value) {
+    size_t start = value.find('[');
+    size_t end = value.rfind(']');
+    
+    if (start == string::npos || end == string::npos) {
+        return;
+    }
+    
+    string unitListStr = value.substr(start + 1, end - start - 1);
+    size_t pos = 0;
+    
+    while (pos < unitListStr.size()) {
+        size_t openParen = unitListStr.find('(', pos);
+        if (openParen == string::npos) break;
+        
+        string unitType = unitListStr.substr(pos, openParen - pos);
+        
+        size_t closeParen = findMatchingParen(unitListStr, openParen);
+        if (closeParen == string::npos) break;
+        
+        string unitData = unitListStr.substr(openParen + 1, closeParen - openParen - 1);
+        
+        vector<string> params = splitString(unitData, ',');
+        if (params.size() >= 4) {
+            int quantity = stoi(params[0]);
+            int weight = stoi(params[1]);
+            
+            size_t posStart = params[2].find('(');
+            size_t posEnd = params[2].find(')', posStart);
+            string posStr = params[2].substr(posStart, posEnd - posStart + 1);
+            Position pos(posStr);
+            
+            int armyId = stoi(params[3]);
+            
+            Unit* unit = nullptr;
+            if (unitType == "TANK") {
+                unit = new Vehicle(quantity, weight, pos, TANK);
+            } 
+            else if (unitType == "MORTAR") {
+                unit = new Vehicle(quantity, weight, pos, MORTAR);
+            }
+            else if (unitType == "REGULARINFANTRY") {
+                unit = new Infantry(quantity, weight, pos, REGULARINFANTRY);
+            }
+            
+            if (unit != nullptr) {
+                if (armyId == 0) {
+                    arrayLiberationArmy.push_back(unit);
+                } else {
+                    arrayARVN.push_back(unit);
+                }
+            }
+        }
+        
+        pos = closeParen + 1;
+        if (pos < unitListStr.size() && unitListStr[pos] == ',') {
+            pos++;
+        }
+    }
+}
+
+size_t Configuration::findMatchingParen(const string &str, size_t openPos) {
+    int count = 1;
+    for (size_t i = openPos + 1; i < str.size(); i++) {
+        if (str[i] == '(') {
+            count++;
+        } else if (str[i] == ')') {
+            count--;
+            if (count == 0) {
+                return i;
+            }
+        }
+    }
+    return string::npos;
+}
+
+vector<string> Configuration::splitString(const string &str, char delimiter) {
+    vector<string> tokens;
+    size_t start = 0, end = 0;
+    while ((end = str.find(delimiter, start)) != string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + 1;
+    }
+    tokens.push_back(str.substr(start));
+    return tokens;
+}
+
+string Configuration::str() const {
+    return "Configuration[n_rows=" + to_string(n_rows) + ",n_cols=" + to_string(n_cols) + 
+           ",event_code=" + to_string(eventCode) + "]";
+}
 
 //====================== HCMCampaign implementations ======================
 HCMCampaign::HCMCampaign(const string &config_file_path) {
-    // Implementation not provided
+    config = new Configuration(config_file_path);
+    
+    // Create battlefield
+    battleField = new BattleField(
+        config->getNumRows(), 
+        config->getNumCols(), 
+        config->getForestPositions(), 
+        config->getRiverPositions(), 
+        config->getFortificationPositions(), 
+        config->getUrbanPositions(), 
+        config->getSpecialZonePositions()
+    );
+    
+    // Create Liberation Army
+    vector<Unit*> liberationUnits = config->getLiberationArmyUnits();
+    Unit** liberationUnitArray = new Unit*[liberationUnits.size()];
+    for (size_t i = 0; i < liberationUnits.size(); i++) {
+        liberationUnitArray[i] = liberationUnits[i];
+    }
+    liberationArmy = new LiberationArmy(liberationUnitArray, liberationUnits.size(), "Liberation Army", battleField);
+    delete[] liberationUnitArray;
+    
+    // Create ARVN
+    vector<Unit*> arvnUnits = config->getARVNUnits();
+    Unit** arvnUnitArray = new Unit*[arvnUnits.size()];
+    for (size_t i = 0; i < arvnUnits.size(); i++) {
+        arvnUnitArray[i] = arvnUnits[i];
+    }
+    arvn = new ARVN(arvnUnitArray, arvnUnits.size(), "ARVN", battleField);
+    delete[] arvnUnitArray;
 }
 
 void HCMCampaign::run() {
-    // Implementation not provided
+    int eventCode = config->getEventCode();
+    
+    // Apply terrain effects for both armies
+    for (int r = 0; r < battleField->n_rows; r++) {
+        for (int c = 0; c < battleField->n_cols; c++) {
+            TerrainElement* terrain = battleField->getTerrainAt(r, c);
+            if (terrain) {
+                terrain->getEffect(liberationArmy);
+                terrain->getEffect(arvn);
+            }
+        }
+    }
+    
+    // Execute the battle based on event code
+    switch (eventCode) {
+        case 0:
+            // Liberation Army attacks ARVN
+            liberationArmy->fight(arvn, false);
+            break;
+        case 1:
+            // ARVN attacks Liberation Army
+            arvn->fight(liberationArmy, false);
+            break;
+        case 2:
+            // Liberation Army defends against ARVN
+            liberationArmy->fight(arvn, true);
+            break;
+        case 3:
+            // ARVN defends against Liberation Army
+            arvn->fight(liberationArmy, true);
+            break;
+        default:
+            // No action taken for unknown event codes
+            break;
+    }
 }
 
 string HCMCampaign::printResult() {
-    // Implementation not provided
-    return "";
+    string result = "";
+    result += liberationArmy->str() + "\n";
+    result += arvn->str();
+    return result;
 }
-
-*/
-////////////////////////////////////////////////
-/// END OF STUDENT'S ANSWER
-////////////////////////////////////////////////

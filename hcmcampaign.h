@@ -86,18 +86,6 @@ public:
     string str() const { return "(" + to_string(r) + "," + to_string(c) + ")"; }
 };
 
-class BattleField
-{
-private:
-    int n_rows, n_cols;
-    vector<vector<Position *>> terrain;
-public:
-    BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
-                vector<Position *> arrayRiver, vector<Position *> arrayFortification,
-                vector<Position *> arrayUrban, vector<Position *> arraySpecialZone);
-    ~BattleField();
-};
-
 class Unit
 {
 protected:
@@ -163,8 +151,6 @@ private:
     vector<Unit *> findCombination(bool isInfantry, int targetScore);
     void updateWeights(double factor);
     void updateQuantities(double factor);
-    void reinforce();
-    int nextFibonacci(int n);
     void removeUnits(vector<Unit *> &unitList);
     void removeUnits(bool isInfatry); // remove all, 1 for infantry, 0 for vehicle
     void captureUnits(Army *enemy);
@@ -207,9 +193,10 @@ public:
     ~Army() { delete unitList; }
     int getLF() const { return LF; }
     int getEXP() const { return EXP; }
+    void modifyLF(double factor) { LF = round(LF * factor); }
+    void modifyEXP(double factor) { EXP = round(EXP * factor); }
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
-    virtual string str() const = 0;
     friend class UnitList;
 };
 
@@ -232,13 +219,113 @@ public:
     string str() const override;
     friend class UnitList;
 };
-/*
+
+class BattleField
+{
+private:
+    int n_rows, n_cols;
+    vector<vector<TerrainElement*>> terrain; 
+
+public:
+    BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
+                vector<Position *> arrayRiver, vector<Position *> arrayFortification,
+                vector<Position *> arrayUrban, vector<Position *> arraySpecialZone);
+    ~BattleField();
+    string str() const { return "BattleField[n_rows=" + to_string(n_rows) + ",n_cols=" + to_string(n_cols) + "]"; };
+    TerrainElement* getTerrainAt(int row, int col) const;
+    friend class Army;
+};
+
 class TerrainElement
 {
 public:
     TerrainElement();
-    ~TerrainElement();
+    virtual ~TerrainElement();
     virtual void getEffect(Army *army) = 0;
+};
+
+class Road : public TerrainElement
+{
+public:
+    Road();
+    ~Road();
+    void getEffect(Army *army) override;
+};
+
+class Mountain : public TerrainElement
+{
+public:
+    Mountain();
+    ~Mountain();
+    void getEffect(Army *army) override;
+};
+
+class River : public TerrainElement
+{
+public:
+    River();
+    ~River();
+    void getEffect(Army *army) override;
+};
+
+class Urban : public TerrainElement
+{
+public:
+    Urban();
+    ~Urban();
+    void getEffect(Army *army) override;
+};
+
+class Fortification : public TerrainElement
+{
+public:
+    Fortification();
+    ~Fortification();
+    void getEffect(Army *army) override;
+};
+
+class SpecialZone : public TerrainElement
+{
+public:
+    SpecialZone();
+    ~SpecialZone();
+    void getEffect(Army *army) override;
+};
+
+class Configuration {
+private:
+    int n_rows, n_cols;
+    vector<Position *> arrayForest;
+    vector<Position *> arrayRiver;
+    vector<Position *> arrayFortification;
+    vector<Position *> arrayUrban;
+    vector<Position *> arraySpecialZone;
+    vector<Unit *> arrayLiberationArmy;
+    vector<Unit *> arrayARVN;
+    int eventCode;
+    
+    // Helper methods for parsing
+    vector<Position*> parsePositionArray(const string &value);
+    void parseUnitList(const string &value);
+    size_t findMatchingParen(const string &str, size_t openPos);
+    vector<string> splitString(const string &str, char delimiter);
+    
+public:
+    Configuration(const string &filepath);
+    ~Configuration();
+    string str() const;
+    
+    // Getter methods
+    int getNumRows() const { return n_rows; }
+    int getNumCols() const { return n_cols; }
+    const vector<Position*>& getForestPositions() const { return arrayForest; }
+    const vector<Position*>& getRiverPositions() const { return arrayRiver; }
+    const vector<Position*>& getFortificationPositions() const { return arrayFortification; }
+    const vector<Position*>& getUrbanPositions() const { return arrayUrban; }
+    const vector<Position*>& getSpecialZonePositions() const { return arraySpecialZone; }
+    const vector<Unit*>& getLiberationArmyUnits() const { return arrayLiberationArmy; }
+    const vector<Unit*>& getARVNUnits() const { return arrayARVN; }
+    int getEventCode() const { return eventCode; }
 };
 
 class HCMCampaign
@@ -247,12 +334,12 @@ private:
     Configuration *config;
     BattleField *battleField;
     LiberationArmy *liberationArmy;
-    ARVN *ARVN;
+    ARVN *arvn;
 
 public:
     HCMCampaign(const string &config_file_path);
     void run();
     string printResult();
 };
-*/
+
 #endif
