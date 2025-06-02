@@ -12,7 +12,7 @@
 
 using namespace std;
 
-/*
+
 void g_satc_01() {
     cout << "----- Sample Testcase 01 -----" << endl;
     Configuration* config = new Configuration("config.txt");
@@ -58,18 +58,29 @@ void g_satc_02() {
     delete[] unitArrayOfLiber;
     delete[] unitArrayOfAr;
 }
-*/
+
 
 int main(int argc, const char * argv[]) {
     //g_satc_01();
     //g_satc_02();
-    /*
+    
     Vehicle tankOfLiber(5, 2, Position(1, 2), TANK);
     cout << tankOfLiber.str() << endl;
 
     Infantry sniperOfLiber(5, 2, Position(1, 1), SNIPER);
-    cout << sniperOfLiber.str() << endl;*/
+    cout << sniperOfLiber.str() << endl;
 
+    Vehicle tankOfAr(5, 2, Position(3, 2), TANK);
+    cout << tankOfAr.str() << endl;
+    Vehicle truckOfAr(3, 1, Position(3, 1), TRUCK);
+    cout << truckOfAr.str() << endl;
     
     return 0;
 }
+
+// cout << "----- Sample Testcase 01 -----" << endl;
+//     Configuration* config = new Configuration("config.txt");
+//     cout << config->str() << endl;
+//     delete config;
+// ----- Sample Testcase 01 -----
+// [num_rows=10,num_cols=8,arrayForest=[(1,2),(3,5)],arrayRiver=[(0,0),(0,4)],arrayFortification=[(6,6)],arrayUrban=[(2,0)],arraySpecialZone=[(9,7)],liberationUnits=[Vehicle[vehicleType=TANK,quantity=5,weight=2,position=(1,2)],Infantry[infantryType=REGULARINFANTRY,quantity=5,weight=2,position=(1,1)]],ARVNUnits=[Vehicle[vehicleType=TANK,quantity=5,weight=2,position=(3,2)],Infantry[infantryType=REGULARINFANTRY,quantity=5,weight=2,position=(3,3)]],eventCode=23]

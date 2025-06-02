@@ -18,7 +18,6 @@
 /// DO NOT modify any parameters in the functions.
 ////////////////////////////////////////////////////////////////////////
 
-// Forward declaration
 class Position;
 class Unit;
 class UnitList;
@@ -69,6 +68,9 @@ public:
     static int digitSum(int n);
     static bool isSpecial(int n);
     static int nextFibo(int n);
+    static int safeCeil(double value);
+    static double calculateDistance(const Position& pos1, const Position& pos2);
+    static string trim(const string &str);
 };
 
 class Position
@@ -78,7 +80,7 @@ private:
 
 public:
     Position(int r = 0, int c = 0) : r(r), c(c) {}
-    Position(const string &str_pos); // Example: str_pos = "(1,15)"
+    Position(const string &str_pos); 
     int getRow() const { return r; }
     int getCol() const { return c; }
     void setRow(int r) { this->r = r; }
@@ -86,20 +88,46 @@ public:
     string str() const { return "(" + to_string(r) + "," + to_string(c) + ")"; }
 };
 
+class BattleField
+{
+private:
+    int n_rows, n_cols;
+    vector<vector<Position *>> terrain;
+public:
+    BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
+                vector<Position *> arrayRiver, vector<Position *> arrayFortification,
+                vector<Position *> arrayUrban, vector<Position *> arraySpecialZone);
+    ~BattleField();
+    int getNumRows() const { return n_rows; }
+    int getNumCols() const { return n_cols; }
+
+    TerrainElement* getElement(int row, int col);
+
+    void getForestEffect(Army *army);
+    void getRiverEffect(Army *army);
+    void getFortificationEffect(Army *army);
+    void getUrbanEffect(Army *army);
+    void getSpecialZoneEffect(Army *army);
+
+    string str() const {
+        return "BattleField[n_rows=" + to_string(n_rows) + ",n_cols=" + to_string(n_cols) + "]";
+    }
+};
+
 class Unit
 {
 protected:
     int quantity, weight;
     Position pos;
-    virtual void setAttackScore();
-    int attackScore = 0;
-    void updateAttackScore(int score) { attackScore = score; }
+    int attackScore = -1;
 private:
     virtual string typeToString() const = 0;
 public:
     Unit(int quantity, int weight, Position pos);
     virtual ~Unit();
-    virtual int getAttackScore() = 0;
+    void updateAttackScore(int score) { attackScore = score; }
+    int getAttackScore();
+    virtual void setAttackScore() = 0;
     Position getCurrentPosition() const;
     virtual string str() const = 0;
     virtual int getType() const = 0;
@@ -116,8 +144,7 @@ private:
     string typeToString() const override;
 public:
     Vehicle(int quantity, int weight, const Position pos, VehicleType vehicleType);
-    int getAttackScore() override { return attackScore; }
-    string str() const override { return "Vehicle[vehicleType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
+    string str() const override { return "Vehicle[vehicleType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",position=" + pos.str() + "]"; }
 };
 
 class Infantry : public Unit
@@ -130,8 +157,7 @@ private:
     string typeToString() const override;
 public:
     Infantry(int quantity, int weight, const Position pos, InfantryType infantryType);
-    int getAttackScore() override { return attackScore; }
-    string str() const override { return "Infantry[infantryType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",pos=" + pos.str() + "]"; }
+    string str() const override { return "Infantry[infantryType=" + typeToString() + ",quantity=" + to_string(quantity) + ",weight=" + to_string(weight) + ",position=" + pos.str() + "]"; }
 };
 
 class UnitList
@@ -152,25 +178,29 @@ private:
     void updateWeights(double factor);
     void updateQuantities(double factor);
     void removeUnits(vector<Unit *> &unitList);
-    void removeUnits(bool isInfatry); // remove all, 1 for infantry, 0 for vehicle
+    void removeUnits(bool isInfatry); 
     void captureUnits(Army *enemy);
     void upToFibo();
     void resetScore();
-    void removeUselessUnits();
+    bool isSameType(Unit* unit1, Unit* unit2);
 public:
-    UnitList();
-    ~UnitList();
-    bool insert(Unit *unit);                   // return true if insert successfully
+    UnitList(int S);
+    ~UnitList() {}
+    bool insert(Unit *unit);             
     bool isContain(Unit *unit);
-    bool isContain(VehicleType vehicleType);   // return true if it exists
-    bool isContain(InfantryType infantryType); // return true if it exists
+    bool isContain(VehicleType vehicleType); 
+    bool isContain(InfantryType infantryType); 
 
     void updateUnit(Unit *unit);
     void updateUnit(VehicleType vehicleType, int weight);
     void updateUnit(InfantryType infantryType, int weight);
+    void removeUselessUnits(int attackScore);
+    void removeARVN();
     string str() const;
-    void setAttack(Node *p, double factor) { p->unit->updateAttackScore(round(p->unit->getAttackScore() * factor)); }
+    void setAttack(Node *p, double factor) { p->unit->updateAttackScore(MathUtils::safeCeil(p->unit->getAttackScore() * factor)); }
     int size() const { return count_vehicle + count_infantry; }
+    vector<Unit *> getInfantry();
+    vector<Unit *> getVehicle();
 
     friend class Army;
     friend class LiberationArmy;
@@ -182,21 +212,24 @@ protected:
     int LF;
     int EXP;
     string name;
-    UnitList *unitList;
     BattleField *battleField;
-    void updateScore();
-    void resetScore();
-private:
-    virtual vector<Unit *> getUnit(int target);
+    UnitList *unitList;
+    
 public:
     Army(Unit **unitArray, int size, string name, BattleField *battleField);
-    ~Army() { delete unitList; }
+    virtual ~Army() {}
     int getLF() const { return LF; }
     int getEXP() const { return EXP; }
-    void modifyLF(double factor) { LF = round(LF * factor); }
-    void modifyEXP(double factor) { EXP = round(EXP * factor); }
+    void setLF(int LF) { this->LF = LF; }
+    void setEXP(int EXP) { this->EXP = EXP; }
+    string getName() const { return name; }
+    void modifyScore();
+    void updateScore();
+    UnitList* getUnitList() const { return unitList; }
+    void resetScore();
 
     virtual void fight(Army *enemy, bool defense = false) = 0;
+    virtual string str() const = 0;
     friend class UnitList;
 };
 
@@ -204,7 +237,7 @@ class LiberationArmy : public Army {
 public:
     LiberationArmy(Unit **unitArray, int size, string name, BattleField *battleField)
     : Army(unitArray, size, name, battleField) {}
-    // remember to update LF and EXP when insert new unit
+    ~LiberationArmy() override { delete unitList; }
     void fight(Army *enemy, bool defense = false) override;
     string str() const override;
     friend class UnitList;
@@ -212,134 +245,113 @@ public:
 
 class ARVN : public Army {
 private:
-    vector<Unit *> getUnit(int target) override;
 public:
     ARVN(Unit **unitArray, int size, string name, BattleField *battleField);
+    ~ARVN() override { delete unitList; }
     void fight(Army *enemy, bool defense = false) override;
     string str() const override;
     friend class UnitList;
 };
 
-class BattleField
-{
-private:
-    int n_rows, n_cols;
-    vector<vector<TerrainElement*>> terrain; 
-
+class TerrainElement {
+protected:
+    Position pos; 
+    double calculateDistance(const Position& pos1, const Position& pos2);
+    int safeCeil(double value) {
+        double diff = abs(value - round(value));
+        return (diff < 1e-9) ? round(value) : ceil(value);
+    }
 public:
-    BattleField(int n_rows, int n_cols, vector<Position *> arrayForest,
-                vector<Position *> arrayRiver, vector<Position *> arrayFortification,
-                vector<Position *> arrayUrban, vector<Position *> arraySpecialZone);
-    ~BattleField();
-    string str() const { return "BattleField[n_rows=" + to_string(n_rows) + ",n_cols=" + to_string(n_cols) + "]"; };
-    TerrainElement* getTerrainAt(int row, int col) const;
-    friend class Army;
-};
-
-class TerrainElement
-{
-public:
-    TerrainElement();
+    TerrainElement(Position);
     virtual ~TerrainElement();
     virtual void getEffect(Army *army) = 0;
 };
 
-class Road : public TerrainElement
-{
+class Road : public TerrainElement {
 public:
-    Road();
-    ~Road();
-    void getEffect(Army *army) override;
+    Road(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
-class Mountain : public TerrainElement
-{
+class Mountain : public TerrainElement {
 public:
-    Mountain();
-    ~Mountain();
-    void getEffect(Army *army) override;
+    Mountain(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
-class River : public TerrainElement
-{
+class River : public TerrainElement {
 public:
-    River();
-    ~River();
-    void getEffect(Army *army) override;
+    River(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
-class Urban : public TerrainElement
-{
+class Urban : public TerrainElement {
 public:
-    Urban();
-    ~Urban();
-    void getEffect(Army *army) override;
+    Urban(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
-class Fortification : public TerrainElement
-{
+class Fortification : public TerrainElement {
 public:
-    Fortification();
-    ~Fortification();
-    void getEffect(Army *army) override;
+    Fortification(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
-class SpecialZone : public TerrainElement
-{
+class SpecialZone : public TerrainElement {
 public:
-    SpecialZone();
-    ~SpecialZone();
-    void getEffect(Army *army) override;
+    SpecialZone(Position pos) : TerrainElement(pos) {}
+    void getEffect(Army *army);
 };
 
 class Configuration {
-private:
-    int n_rows, n_cols;
-    vector<Position *> arrayForest;
-    vector<Position *> arrayRiver;
-    vector<Position *> arrayFortification;
-    vector<Position *> arrayUrban;
-    vector<Position *> arraySpecialZone;
-    vector<Unit *> arrayLiberationArmy;
-    vector<Unit *> arrayARVN;
-    int eventCode;
-    
-    // Helper methods for parsing
-    vector<Position*> parsePositionArray(const string &value);
-    void parseUnitList(const string &value);
-    size_t findMatchingParen(const string &str, size_t openPos);
-    vector<string> splitString(const string &str, char delimiter);
-    
-public:
-    Configuration(const string &filepath);
-    ~Configuration();
-    string str() const;
-    
-    // Getter methods
-    int getNumRows() const { return n_rows; }
-    int getNumCols() const { return n_cols; }
-    const vector<Position*>& getForestPositions() const { return arrayForest; }
-    const vector<Position*>& getRiverPositions() const { return arrayRiver; }
-    const vector<Position*>& getFortificationPositions() const { return arrayFortification; }
-    const vector<Position*>& getUrbanPositions() const { return arrayUrban; }
-    const vector<Position*>& getSpecialZonePositions() const { return arraySpecialZone; }
-    const vector<Unit*>& getLiberationArmyUnits() const { return arrayLiberationArmy; }
-    const vector<Unit*>& getARVNUnits() const { return arrayARVN; }
-    int getEventCode() const { return eventCode; }
-};
+    private:
+        int num_rows;
+        int num_cols;
+        vector<Position*> arrayForest;
+        vector<Position*> arrayRiver;
+        vector<Position*> arrayFortification;
+        vector<Position*> arrayUrban;
+        vector<Position*> arraySpecialZone;
+        Unit** liberationUnits = nullptr;
+        Unit** ARVNUnits = nullptr;
+        
+        int eventCode;
+        int liberationSize = 0;
+        int ARVNSize = 0;
+        void parseTerrainArray(const string &line, vector<Position*> &array);
+        void parseUnitList(const string &line, Unit** &liberationUnits, Unit** &ARVNUnits);
+        Unit* createUnit(const string &unitStr);
+    public:
+        Configuration(const string & filepath);
+        ~Configuration();
+        string str() const;
+        
+        int getNumRows() const { return num_rows; }
+        int getNumCols() const { return num_cols; }
+        const vector<Position*>& getForestPositions() const { return arrayForest; }
+        const vector<Position*>& getRiverPositions() const { return arrayRiver; }
+        const vector<Position*>& getFortificationPositions() const { return arrayFortification; }
+        const vector<Position*>& getUrbanPositions() const { return arrayUrban; }
+        const vector<Position*>& getSpecialZonePositions() const { return arraySpecialZone; }
+        int getEventCode() const { return eventCode; }
+        Unit** getLiberationUnits() { return liberationUnits; }
+        Unit** getARVNUnits() { return ARVNUnits; }
+        int getLiberationSize() const { return liberationSize; }
+        int getARVNSize() const { return ARVNSize; }
+    };
 
-class HCMCampaign
-{
+class HCMCampaign {
 private:
-    Configuration *config;
-    BattleField *battleField;
-    LiberationArmy *liberationArmy;
-    ARVN *arvn;
-
+    Configuration* config;
+    BattleField* battleField;
+    LiberationArmy* liberationArmy;
+    ARVN* arvnArmy;
+    void getTerrainEffect();
+    void removeUselessUnits();
 public:
-    HCMCampaign(const string &config_file_path);
+    HCMCampaign(const string & config_file_path);
+    ~HCMCampaign();
     void run();
     string printResult();
 };
-
 #endif
